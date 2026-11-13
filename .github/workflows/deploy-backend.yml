@@ -47,18 +47,17 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd ${{ secrets.DEPLOY_PATH }}
-            
-            # 5.1 停止旧的 Java 进程
+
+            # 5.1 停止旧的 Java 进程（注意这里的 [r] 防止误杀自己）
             echo "正在停止旧的进程..."
-            pkill -f "ruoyi-admin.jar" || true
-            # 等待 2 秒确保端口被完全释放
+            pkill -f "[r]uoyi-admin.jar" || true
             sleep 2
-            
-            # 5.2 启动新的 Jar 包（严格限制内存，适配你的 2核2G）
+
+            # 5.2 启动新的 Jar 包
             echo "正在启动新进程..."
             nohup java -Xms256m -Xmx512m -XX:MaxMetaspaceSize=128m -jar ruoyi-admin.jar > ruoyi.log 2>&1 &
-            
-            # 5.3 等待几秒并检查日志，确保启动成功
+
+            # 5.3 等待并检查日志
             echo "等待服务启动..."
             sleep 8
             tail -n 20 ruoyi.log
