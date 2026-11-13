@@ -48,9 +48,9 @@ jobs:
           script: |
             cd ${{ secrets.DEPLOY_PATH }}
 
-            # 5.1 停止旧的 Java 进程（注意这里的 [r] 防止误杀自己）
+            # 5.1 停止旧的 Java 进程（只杀包含 java 关键字的进程，防止误杀 SSH 自身）
             echo "正在停止旧的进程..."
-            pkill -f "[r]uoyi-admin.jar" || true
+            ps -ef | grep ruoyi-admin.jar | grep java | grep -v grep | awk '{print $2}' | xargs -r kill -9
             sleep 2
 
             # 5.2 启动新的 Jar 包
