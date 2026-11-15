@@ -188,21 +188,6 @@ public class SysUserController extends BaseController
     }
 
     /**
-     * 根据用户ID查询昵称并返回问候语
-     */
-    @PreAuthorize("@ss.hasRole('admin')")
-    @GetMapping("/name")
-    public AjaxResult getUserGreeting(@RequestParam("userId") Long userId)
-    {
-        SysUser user = userService.selectUserById(userId);
-        if (user == null)
-        {
-            return error("用户不存在");
-        }
-        return AjaxResult.success("你好" + user.getNickName());
-    }
-
-    /**
      * 重置密码
      */
     @PreAuthorize("@ss.hasPermi('system:user:resetPwd')")
