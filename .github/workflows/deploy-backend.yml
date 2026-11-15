@@ -1,14 +1,14 @@
-name: Deploy Backend Docker CI/CD
+name: Deploy Backend via ACR
 
 on:
   push:
     branches: [ "main" ]
 
 jobs:
-  build-and-deploy:
+  build-and-push:
     runs-on: ubuntu-latest
     steps:
-      - name: 检出新代码
+      - name: 检出代码
         uses: actions/checkout@v4
 
       - name: 安装 JDK 17
@@ -21,22 +21,37 @@ jobs:
       - name: Maven 构建打包
         run: mvn clean package -DskipTests
 
-      - name: 上传 Jar 包到服务器
-        uses: appleboy/scp-action@v0.1.7
+      - name: 登录阿里云 ACR
+        uses: docker/login-action@v3
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "ruoyi-admin/target/ruoyi-admin.jar"
-          target: "${{ secrets.DEPLOY_PATH }}/backend"
-          strip_components: 2
+          registry: ${{ secrets.ACR_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
 
-      - name: 远程重启后端 Docker 容器
+      - name: 构建并推送后端 Docker 镜像
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend          # 假设你的 Dockerfile 在 backend 目录下
+          push: true
+          tags: |
+            ${{ secrets.ACR_REGISTRY }}/${{ secrets.ACR_NAMESPACE }}/ruoyi-backend:latest
+            ${{ secrets.ACR_REGISTRY }}/${{ secrets.ACR_NAMESPACE }}/ruoyi-backend:${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: 远程通知服务器拉取并重启
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            cd ${{ secrets.DEPLOY_PATH }}
-            docker compose up -d ruoyi-backend --build
+            cd /home/ruoyi-docker
+            # 登录 ACR (如果服务器是首次拉取私有镜像，需要登录)
+            docker login --username=${{ secrets.ACR_USERNAME }} --password=${{ secrets.ACR_PASSWORD }} ${{ secrets.ACR_REGISTRY }}
+            # 拉取最新镜像
+            docker compose pull ruoyi-backend
+            # 用新镜像重建并启动容器
+            docker compose up -d ruoyi-backend
