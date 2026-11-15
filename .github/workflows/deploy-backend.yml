@@ -34,8 +34,8 @@ jobs:
           context: .          # 假设你的 Dockerfile 在 backend 目录下
           push: true
           tags: |
-            ${{ secrets.ACR_REGISTRY }}/${{ secrets.ACR_NAMESPACE }}/ruoyi-backend:latest
-            ${{ secrets.ACR_REGISTRY }}/${{ secrets.ACR_NAMESPACE }}/ruoyi-backend:${{ github.sha }}
+            ${{ secrets.ACR_REGISTRY }}/${{ secrets.ACR_NAMESPACE }}/my-backend:latest
+            ${{ secrets.ACR_REGISTRY }}/${{ secrets.ACR_NAMESPACE }}/my-backend:${{ github.sha }}
 
   deploy:
     needs: build-and-push
